@@ -4,7 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using MongoDB.Driver;
 using MottuFind_C_.Domain.Repositories;
+using MottuFind_C_.Infrastructure.Context;
 using Sprint1_C_.Domain.Entities;
 using Sprint1_C_.Infrastructure.Data;
 
@@ -12,63 +14,53 @@ namespace MottuFind_C_.Infrastructure.Repositories
 {
     public class MotoRepository : IMotoRepository
     {
-        private readonly AppDbContext _context;
+        private readonly IMongoCollection<Moto> _collection;
 
-        public MotoRepository(AppDbContext context)
+        public MotoRepository(MongoDbContext context)
         {
-            _context = context;
+            _collection = context.GetCollection<Moto>("Moto");
         }
 
         public async Task<List<Moto>> ObterTodosAsync()
         {
-            return await _context.Moto
-                .Include(m => m.TagRfid)
-                .ToListAsync();
+            return await _collection.Find(_ => true).ToListAsync();
         }
 
         public async Task<Moto?> ObterPorPlacaAsync(string placa)
         {
-            return await _context.Moto
-                .Include(m => m.TagRfid)
-                .FirstOrDefaultAsync(m => m.Placa == placa);
+            var filter = Builders<Moto>.Filter.Eq(e => e.Placa, placa);
+            return await _collection.Find(filter).FirstOrDefaultAsync();
         }
 
         public async Task<(List<Moto> Itens, int Total)> ObterPorPaginaAsync(int numeroPag, int tamanhoPag)
         {
-            var query = _context.Moto.Include(m => m.TagRfid).AsQueryable();
-
-            var total = await query.CountAsync();
-            var itens = await query
-                .Skip((numeroPag - 1) * tamanhoPag)
-                .Take(tamanhoPag)
-                .ToListAsync();
-
+            var total = (int)await _collection.CountDocumentsAsync(_ => true);
+            var itens = await _collection.Find(_ => true)
+                                .Skip((numeroPag - 1) * tamanhoPag)
+                                .Limit(tamanhoPag)
+                                .ToListAsync();
             return (itens, total);
         }
 
         public async Task<Moto> CriarAsync(Moto moto, TagRfid tag)
         {
             moto.TagRfid = tag;
-            _context.Moto.Add(moto);
-            await _context.SaveChangesAsync();
+            await _collection.InsertOneAsync(moto);
             return moto;
         }
 
         public async Task<bool> AtualizarAsync(Moto moto)
         {
-            _context.Moto.Update(moto);
-            await _context.SaveChangesAsync();
-            return true;
+            var filter = Builders<Moto>.Filter.Eq(e => e.Placa, moto.Placa);
+            var result = await _collection.ReplaceOneAsync(filter, moto);
+            return result.IsAcknowledged && result.ModifiedCount > 0;
         }
 
         public async Task<bool> RemoverAsync(string placa)
         {
-            var moto = await _context.Moto.FindAsync(placa);
-            if (moto == null) return false;
-
-            _context.Moto.Remove(moto);
-            await _context.SaveChangesAsync();
-            return true;
+            var filter = Builders<Moto>.Filter.Eq(e => e.Placa, placa);
+            var result = await _collection.DeleteOneAsync(filter);
+            return result.IsAcknowledged && result.DeletedCount > 0;
         }
     }
 }

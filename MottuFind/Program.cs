@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using MottuFind_C_.Application.Services;
 using MottuFind_C_.Domain.Repositories;
+using MottuFind_C_.Infrastructure.Context;
 using MottuFind_C_.Infrastructure.Repositories;
 using Sprint1_C_.Application.Services;
 using Sprint1_C_.Infrastructure.Data;
@@ -15,9 +16,17 @@ namespace Sprint1_C_
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            
+
 
             builder.Services.AddControllers();
+            // Repositories
+            builder.Services.AddScoped<MottuFind_C_.Domain.Repositories.IFilialRepository, MottuFind_C_.Infrastructure.Repositories.FilialRepository>();
+            builder.Services.AddScoped<MottuFind_C_.Domain.Repositories.IMotoRepository, MottuFind_C_.Infrastructure.Repositories.MotoRepository>();
+            builder.Services.AddScoped<MottuFind_C_.Domain.Repositories.IPatioRepository, MottuFind_C_.Infrastructure.Repositories.PatioRepository>();
+            builder.Services.AddScoped<MottuFind_C_.Domain.Repositories.IUsuarioRepository, MottuFind_C_.Infrastructure.Repositories.UsuarioRepository>();
+            builder.Services.AddScoped<MottuFind_C_.Domain.Repositories.ILeitorRfidRepository, MottuFind_C_.Infrastructure.Repositories.LeitorRfidRepository>();
+            builder.Services.AddScoped<MottuFind_C_.Domain.Repositories.ILeituraRfidRepository, MottuFind_C_.Infrastructure.Repositories.LeituraRfidRepository>();
+
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(o =>
                 o.EnableAnnotations()
@@ -25,14 +34,14 @@ namespace Sprint1_C_
 
 
 
-            builder.Services.AddDbContext<AppDbContext>(options =>
-            {
-                var connectionString = Environment.GetEnvironmentVariable("DEFAULT_CONNECTION");
-                if (string.IsNullOrWhiteSpace(connectionString))
-                    throw new Exception("A vari�vel de ambiente DEFAULT_CONNECTION n�o est� definida.");
+            // MongoDB setup
+            var mongoSettings = builder.Configuration.GetSection("MongoDb").Get<MongoDbSettings>();
+            if (mongoSettings == null)
+                throw new Exception("MongoDb settings not configured in appsettings.json");
 
-                options.UseOracle(connectionString);
-            });
+            builder.Services.AddSingleton(mongoSettings);
+            builder.Services.AddSingleton<MongoDbContext>();
+
 
 
 
@@ -58,7 +67,7 @@ namespace Sprint1_C_
 
             builder.Services.AddControllers()
                 .AddJsonOptions(opt => {
-                                opt.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+                    opt.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
                 });
 
 
@@ -66,7 +75,7 @@ namespace Sprint1_C_
             var app = builder.Build();
 
 
-            
+
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();

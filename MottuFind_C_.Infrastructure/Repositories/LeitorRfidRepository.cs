@@ -1,66 +1,69 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
 using MottuFind_C_.Domain.Repositories;
 using Sprint1_C_.Domain.Entities;
 using Sprint1_C_.Infrastructure.Data;
+using MongoDB.Driver;
+using MottuFind_C_.Infrastructure.Context;
 
 namespace MottuFind_C_.Infrastructure.Repositories
 {
     public class LeitorRfidRepository : ILeitorRfidRepository
     {
+        private readonly IMongoCollection<LeitorRfid> _collection;
 
-        private readonly AppDbContext _context;
-
-        public LeitorRfidRepository(AppDbContext context)
+        public LeitorRfidRepository(MongoDbContext context)
         {
-            _context = context;
+            _collection = context.GetCollection<LeitorRfid>("LeitorRfid");
         }
 
         public async Task<List<LeitorRfid>> ObterTodosAsync()
         {
-            return await _context.LeitorRfid.ToListAsync();
+            return await _collection.Find(_ => true).ToListAsync();
         }
 
         public async Task<LeitorRfid?> ObterPorIdAsync(int id)
         {
-            return await _context.LeitorRfid.FindAsync(id);
+            var filter = Builders<LeitorRfid>.Filter.Eq(e => e.Id, id);
+            return await _collection.Find(filter).FirstOrDefaultAsync();
         }
 
         public async Task<(List<LeitorRfid> Itens, int Total)> ObterPorPaginaAsync(int numeroPag, int tamanhoPag)
         {
-            var query = _context.LeitorRfid.AsQueryable();
-            var total = await query.CountAsync();
-            var itens = await query.Skip((numeroPag - 1) * tamanhoPag).Take(tamanhoPag).ToListAsync();
+            var total = (int)await _collection.CountDocumentsAsync(_ => true);
+            var itens = await _collection.Find(_ => true)
+                                .Skip((numeroPag - 1) * tamanhoPag)
+                                .Limit(tamanhoPag)
+                                .ToListAsync();
             return (itens, total);
         }
 
-        public async Task<LeitorRfid> CriarAsync(LeitorRfid leitor)
+        public async Task<LeitorRfid> CriarAsync(LeitorRfid obj)
         {
-            _context.LeitorRfid.Add(leitor);
-            await _context.SaveChangesAsync();
-            return leitor;
+            if (obj.Id == 0)
+            {
+                var sort = Builders<LeitorRfid>.Sort.Descending(e => e.Id);
+                var last = await _collection.Find(_ => true).Sort(sort).Limit(1).FirstOrDefaultAsync();
+                obj.Id = (last?.Id ?? 0) + 1;
+            }
+
+            await _collection.InsertOneAsync(obj);
+            return obj;
         }
 
-
-        public async Task<bool> AtualizarAsync(LeitorRfid leitor)
+        public async Task<bool> AtualizarAsync(LeitorRfid obj)
         {
-            _context.LeitorRfid.Update(leitor);
-            await _context.SaveChangesAsync();
-            return true;
+            var filter = Builders<LeitorRfid>.Filter.Eq(e => e.Id, obj.Id);
+            var result = await _collection.ReplaceOneAsync(filter, obj);
+            return result.IsAcknowledged && result.ModifiedCount > 0;
         }
 
         public async Task<bool> RemoverAsync(int id)
         {
-            var leitor = await _context.LeitorRfid.FindAsync(id);
-            if (leitor == null) return false;
-
-            _context.LeitorRfid.Remove(leitor);
-            await _context.SaveChangesAsync();
-            return true;
+            var filter = Builders<LeitorRfid>.Filter.Eq(e => e.Id, id);
+            var result = await _collection.DeleteOneAsync(filter);
+            return result.IsAcknowledged && result.DeletedCount > 0;
         }
     }
 }
+

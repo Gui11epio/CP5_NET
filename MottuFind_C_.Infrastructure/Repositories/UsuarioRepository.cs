@@ -4,7 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using MongoDB.Driver;
 using MottuFind_C_.Domain.Repositories;
+using MottuFind_C_.Infrastructure.Context;
 using Sprint1_C_.Domain.Entities;
 using Sprint1_C_.Infrastructure.Data;
 
@@ -12,52 +14,59 @@ namespace MottuFind_C_.Infrastructure.Repositories
 {
     public class UsuarioRepository : IUsuarioRepository
     {
-        private readonly AppDbContext _context;
+        private readonly IMongoCollection<Usuario> _collection;
 
-        public UsuarioRepository(AppDbContext context)
+        public UsuarioRepository(MongoDbContext context)
         {
-            _context = context;
+            _collection = context.GetCollection<Usuario>("Usuario");
         }
 
         public async Task<List<Usuario>> ObterTodosAsync()
         {
-            return await _context.Usuario.ToListAsync();
+            return await _collection.Find(_ => true).ToListAsync();
         }
 
         public async Task<Usuario?> ObterPorIdAsync(int id)
         {
-            return await _context.Usuario.FindAsync(id);
+            var filter = Builders<Usuario>.Filter.Eq(e => e.Id, id);
+            return await _collection.Find(filter).FirstOrDefaultAsync();
         }
 
         public async Task<(List<Usuario> Itens, int Total)> ObterPorPaginaAsync(int numeroPag, int tamanhoPag)
         {
-            var query = _context.Usuario.AsQueryable();
-            var total = await query.CountAsync();
-            var itens = await query.Skip((numeroPag - 1) * tamanhoPag).Take(tamanhoPag).ToListAsync();
+            var total = (int)await _collection.CountDocumentsAsync(_ => true);
+            var itens = await _collection.Find(_ => true)
+                                .Skip((numeroPag - 1) * tamanhoPag)
+                                .Limit(tamanhoPag)
+                                .ToListAsync();
             return (itens, total);
         }
 
-        public async Task<Usuario> CriarAsync(Usuario usuario)
+        public async Task<Usuario> CriarAsync(Usuario obj)
         {
-            _context.Usuario.Add(usuario);
-            await _context.SaveChangesAsync();
-            return usuario;
+            if (obj.Id == 0)
+            {
+                var sort = Builders<Usuario>.Sort.Descending(e => e.Id);
+                var last = await _collection.Find(_ => true).Sort(sort).Limit(1).FirstOrDefaultAsync();
+                obj.Id = (last?.Id ?? 0) + 1;
+            }
+
+            await _collection.InsertOneAsync(obj);
+            return obj;
         }
 
-        public async Task<bool> AtualizarAsync(Usuario usuario)
+        public async Task<bool> AtualizarAsync(Usuario obj)
         {
-            _context.Usuario.Update(usuario);
-            await _context.SaveChangesAsync();
-            return true;
+            var filter = Builders<Usuario>.Filter.Eq(e => e.Id, obj.Id);
+            var result = await _collection.ReplaceOneAsync(filter, obj);
+            return result.IsAcknowledged && result.ModifiedCount > 0;
         }
 
         public async Task<bool> RemoverAsync(int id)
         {
-            var usuario = await _context.Patio.FindAsync(id);
-            if (usuario == null) return false;
-            _context.Patio.Remove(usuario);
-            await _context.SaveChangesAsync();
-            return true;
+            var filter = Builders<Usuario>.Filter.Eq(e => e.Id, id);
+            var result = await _collection.DeleteOneAsync(filter);
+            return result.IsAcknowledged && result.DeletedCount > 0;
         }
     }
 }
