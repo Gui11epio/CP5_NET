@@ -1,14 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-using MongoDB.Driver;
+﻿using MongoDB.Driver;
 using MottuFind_C_.Domain.Repositories;
 using MottuFind_C_.Infrastructure.Context;
 using Sprint1_C_.Domain.Entities;
-using Sprint1_C_.Infrastructure.Data;
 
 namespace MottuFind_C_.Infrastructure.Repositories
 {
@@ -36,15 +29,24 @@ namespace MottuFind_C_.Infrastructure.Repositories
         {
             var total = (int)await _collection.CountDocumentsAsync(_ => true);
             var itens = await _collection.Find(_ => true)
-                                .Skip((numeroPag - 1) * tamanhoPag)
-                                .Limit(tamanhoPag)
-                                .ToListAsync();
+                                         .Skip((numeroPag - 1) * tamanhoPag)
+                                         .Limit(tamanhoPag)
+                                         .ToListAsync();
             return (itens, total);
         }
 
-        public async Task<Moto> CriarAsync(Moto moto, TagRfid tag)
+        public async Task<Moto> CriarAsync(Moto moto)
         {
+            // Gera automaticamente uma nova TagRfid vinculada à moto
+            var tag = new TagRfid
+            {
+                Id = new Random().Next(1000, 9999), // ou outro gerador
+                CodigoIdentificacao = $"RFID-{Guid.NewGuid():N}",
+                MotoPlaca = moto.Placa
+            };
+
             moto.TagRfid = tag;
+
             await _collection.InsertOneAsync(moto);
             return moto;
         }

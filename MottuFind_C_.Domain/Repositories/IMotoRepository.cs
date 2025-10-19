@@ -12,7 +12,7 @@ namespace MottuFind_C_.Domain.Repositories
         Task<List<Moto>> ObterTodosAsync();
         Task<Moto?> ObterPorPlacaAsync(string placa);
         Task<(List<Moto> Itens, int Total)> ObterPorPaginaAsync(int numeroPag, int tamanhoPag);
-        Task<Moto> CriarAsync(Moto moto, TagRfid tag);
+        Task<Moto> CriarAsync(Moto moto);
         Task<bool> AtualizarAsync(Moto moto);
         Task<bool> RemoverAsync(string placa);
     }

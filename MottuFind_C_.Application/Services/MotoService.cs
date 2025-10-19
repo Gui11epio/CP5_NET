@@ -55,7 +55,7 @@ namespace Sprint1_C_.Application.Services
                 Moto = novaMoto
             };
 
-            await _repo.CriarAsync(novaMoto, novaTag);
+            await _repo.CriarAsync(novaMoto);
 
             return _mapper.Map<MotoResponse>(novaMoto);
         }
