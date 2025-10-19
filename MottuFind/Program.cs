@@ -1,12 +1,15 @@
 using System.Text.Json.Serialization;
-using Microsoft.EntityFrameworkCore;
 using MottuFind_C_.Application.Services;
 using MottuFind_C_.Domain.Repositories;
 using MottuFind_C_.Infrastructure.Context;
 using MottuFind_C_.Infrastructure.Repositories;
 using Sprint1_C_.Application.Services;
-using Sprint1_C_.Infrastructure.Data;
 using Sprint1_C_.Mappings;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Sprint1_C_.HealthChecks;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using MottuFind.Extensions;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Sprint1_C_
 {
@@ -16,23 +19,20 @@ namespace Sprint1_C_
         {
             var builder = WebApplication.CreateBuilder(args);
 
-
-
             builder.Services.AddControllers();
+
             // Repositories
-            builder.Services.AddScoped<MottuFind_C_.Domain.Repositories.IFilialRepository, MottuFind_C_.Infrastructure.Repositories.FilialRepository>();
-            builder.Services.AddScoped<MottuFind_C_.Domain.Repositories.IMotoRepository, MottuFind_C_.Infrastructure.Repositories.MotoRepository>();
-            builder.Services.AddScoped<MottuFind_C_.Domain.Repositories.IPatioRepository, MottuFind_C_.Infrastructure.Repositories.PatioRepository>();
-            builder.Services.AddScoped<MottuFind_C_.Domain.Repositories.IUsuarioRepository, MottuFind_C_.Infrastructure.Repositories.UsuarioRepository>();
-            builder.Services.AddScoped<MottuFind_C_.Domain.Repositories.ILeitorRfidRepository, MottuFind_C_.Infrastructure.Repositories.LeitorRfidRepository>();
-            builder.Services.AddScoped<MottuFind_C_.Domain.Repositories.ILeituraRfidRepository, MottuFind_C_.Infrastructure.Repositories.LeituraRfidRepository>();
+            builder.Services.AddScoped<IFilialRepository, FilialRepository>();
+            builder.Services.AddScoped<IMotoRepository, MotoRepository>();
+            builder.Services.AddScoped<IPatioRepository, PatioRepository>();
+            builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+            builder.Services.AddScoped<ILeitorRfidRepository, LeitorRfidRepository>();
+            builder.Services.AddScoped<ILeituraRfidRepository, LeituraRfidRepository>();
 
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(o =>
                 o.EnableAnnotations()
             );
-
-
 
             // MongoDB setup
             var mongoSettings = builder.Configuration.GetSection("MongoDb").Get<MongoDbSettings>();
@@ -42,25 +42,12 @@ namespace Sprint1_C_
             builder.Services.AddSingleton(mongoSettings);
             builder.Services.AddSingleton<MongoDbContext>();
 
-
-
-
-            builder.Services.AddScoped<IMotoRepository, MotoRepository>();
+            // Services
             builder.Services.AddScoped<MotoService>();
-
-            builder.Services.AddScoped<IFilialRepository, FilialRepository>();
             builder.Services.AddScoped<FilialService>();
-
-            builder.Services.AddScoped<IPatioRepository, PatioRepository>();
             builder.Services.AddScoped<PatioService>();
-
-            builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
             builder.Services.AddScoped<UsuarioService>();
-
-            builder.Services.AddScoped<ILeitorRfidRepository, LeitorRfidRepository>();
             builder.Services.AddScoped<LeitorRfidService>();
-
-            builder.Services.AddScoped<ILeituraRfidRepository, LeituraRfidRepository>();
             builder.Services.AddScoped<LeituraRfidService>();
 
             builder.Services.AddAutoMapper(typeof(MappingProfile));
@@ -70,11 +57,21 @@ namespace Sprint1_C_
                     opt.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
                 });
 
-
+            // ?? HEALTH CHECKS SIMPLIFICADO ??
+            builder.Services.AddHealthChecks()
+                .AddUrlGroup(
+                    new Uri("https://www.google.com"),
+                    name: "Google API",
+                    failureStatus: HealthStatus.Degraded,
+                    tags: new[] { "external", "api" }
+                )
+                .AddCheck<ApplicationHealthCheck>(
+                    "Application",
+                    failureStatus: HealthStatus.Degraded,
+                    tags: new[] { "application", "internal" }
+                );
 
             var app = builder.Build();
-
-
 
             if (app.Environment.IsDevelopment())
             {
@@ -83,11 +80,31 @@ namespace Sprint1_C_
             }
 
             app.UseHttpsRedirection();
-
             app.UseAuthorization();
 
-
             app.MapControllers();
+
+            // ?? ENDPOINTS DE HEALTH CHECK ??
+            app.MapHealthChecks("/health", new HealthCheckOptions()
+            {
+                ResponseWriter = HealthCheckExtensions.WriteResponse,
+                Predicate = check => check.Tags.Contains("application") ||
+                                   check.Tags.Contains("database") ||
+                                   check.Tags.Contains("external")
+            });
+
+            app.MapHealthChecks("/health/ready", new HealthCheckOptions()
+            {
+                ResponseWriter = HealthCheckExtensions.WriteResponse,
+                Predicate = check => check.Tags.Contains("database") ||
+                                   check.Tags.Contains("external")
+            });
+
+            app.MapHealthChecks("/health/live", new HealthCheckOptions()
+            {
+                ResponseWriter = HealthCheckExtensions.WriteResponse,
+                Predicate = check => check.Tags.Contains("application")
+            });
 
             app.Run();
         }
