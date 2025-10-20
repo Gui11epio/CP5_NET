@@ -63,7 +63,7 @@ Com o objetivo de deixar a aplicação mais organizada e destribuir as responsab
 
 1. **Clone o repositório:**
    ```bash
-   https://github.com/Gui11epio/MottuFind_C.git
+   https://github.com/Gui11epio/CP5_NET.git
    
 
 2. **Vá até "appsettings.json"**
