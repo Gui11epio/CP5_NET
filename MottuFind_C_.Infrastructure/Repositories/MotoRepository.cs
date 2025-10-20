@@ -40,7 +40,7 @@ namespace MottuFind_C_.Infrastructure.Repositories
             // Gera automaticamente uma nova TagRfid vinculada à moto
             var tag = new TagRfid
             {
-                Id = new Random().Next(1000, 9999), // ou outro gerador
+                Id = new Random().Next(1000, 9999),
                 CodigoIdentificacao = $"RFID-{Guid.NewGuid():N}",
                 MotoPlaca = moto.Placa
             };
