@@ -1,4 +1,4 @@
-# Sprint 3
+# CP 05
 
 ### 👥 Nome e RM dos Integrantes
 
@@ -50,12 +50,14 @@ Com o objetivo de deixar a aplicação mais organizada e destribuir as responsab
 - Entity Framework Core
 - Swagger (OpenAPI) para documentação
 - Visual Studio 2022
-- Oracle DataBase
+- MongoDB
 - AutoMapper
 - Migrations
 - DataAnnotations
 - Pagination
 - HATEOAS
+- Health Check
+- Versionamento API
 
 ## ▶️ Instruções de Execução
 
@@ -64,36 +66,38 @@ Com o objetivo de deixar a aplicação mais organizada e destribuir as responsab
    https://github.com/Gui11epio/MottuFind_C.git
    
 
-2. **Vá até "lauchSettings.json"**
+2. **Vá até "appsettings.json"**
    
-   <img width="412" height="167" alt="image" src="https://github.com/user-attachments/assets/5f3c5fa2-cff7-4fa2-9300-9a0e745c5a24" />
+   <img width="299" height="260" alt="image" src="https://github.com/user-attachments/assets/5766cd58-42b3-4030-bd39-4a0ca3c37963" />
+
    
 - Nota: Clique com o botão direito em cima de **MottuFind_C_.API** e defina ele como projeto de inicialização, se ainda não estiver 
 
 
-3. **Coloque suas informações do Banco de Dados Oracle**
+3. **Coloque coloque a senha do MongoDB**
+   <img width="1459" height="106" alt="image" src="https://github.com/user-attachments/assets/2e3aeaa3-5d2a-4854-9d73-41a5c519e46d" />
 
-   <img width="995" height="251" alt="image" src="https://github.com/user-attachments/assets/3815d7d0-6038-48f9-84e4-5b16fc378e18" />
+   Senha do Banco:
+   ````bash
+   Re5z3B3DK2rEBGDM
+   ````
 
-
-4. **Abra a terminal na raiz do projeto e coloque as mesmas informações do Oracle**
-   ```bash
-   $env:DEFAULT_CONNECTION = "User Id=xxxxxxx;Password=xxxxxx;Data Source=xxxxxxxxxxxx:1521/ORCL"
-
-5. **Ainda na terminal, rode este comando para criar as tabelas em seu banco de dados:**
-
-   - Para criar uma migration
-   ```bash
-   dotnet ef migrations add ClassesNovas  --project .\MottuFind_C_.Infrastructure\MottuFind_C_.Infrastructure.csproj  --startup-project .\MottuFind\MottuFind_C_.API.csproj  --context AppDbContext
-   ```
-   - Para poder criar as tabelas
-   ```bash
-   dotnet ef database update --project .\MottuFind_C_.Infrastructure\MottuFind_C_.Infrastructure.csproj --startup-project .\MottuFind\MottuFind_C_.API.csproj --context AppDbContext
-   ```
-
-7. **Após tudo isso, rode o programa e o Swagger abrirá sozinho**
+4. **Após tudo isso, rode o programa e o Swagger abrirá sozinho**
    ```bash
    https://localhost:7117/swagger
+
+5. **EndPoints do HealthCheck**
+   ```bash
+    https://localhost:7117/health
+   ````
+   
+   ````bash
+   https://localhost:7117/health/ready
+   ````
+
+   ````bash
+   https://localhost:7117/health/live
+   ````
 
 
 ## 📬JSON de Teste
