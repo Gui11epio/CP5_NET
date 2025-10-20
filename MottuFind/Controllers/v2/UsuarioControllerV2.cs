@@ -8,14 +8,14 @@ using Swashbuckle.AspNetCore.Annotations;
 namespace Sprint1_C_.Controllers
 {
     [ApiController]
-    [ApiVersion("1.0")]
+    [ApiVersion("2.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
     [SwaggerTag("Gerencia operações relacionadas aos usuários.")]
-    public class UsuarioController : ControllerBase
+    public class UsuarioControllerV2 : ControllerBase
     {
         private readonly UsuarioService _usuarioService;
 
-        public UsuarioController(UsuarioService service)
+        public UsuarioControllerV2(UsuarioService service)
         {
             _usuarioService = service;
         }

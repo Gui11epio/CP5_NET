@@ -10,6 +10,7 @@ using Sprint1_C_.HealthChecks;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using MottuFind.Extensions;
 using Microsoft.Extensions.DependencyInjection;
+using Asp.Versioning;
 
 namespace Sprint1_C_
 {
@@ -57,7 +58,19 @@ namespace Sprint1_C_
                     opt.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
                 });
 
-            // ?? HEALTH CHECKS SIMPLIFICADO ??
+            builder.Services.AddApiVersioning(options =>
+            {
+                options.DefaultApiVersion = new ApiVersion(1, 0);
+                options.AssumeDefaultVersionWhenUnspecified = true;
+                options.ReportApiVersions = true;
+            })
+            .AddApiExplorer(options =>
+            {
+                options.GroupNameFormat = "'v'VVV";
+                options.SubstituteApiVersionInUrl = true;
+            });
+
+            // HEALTH CHECKS SIMPLIFICADO
             builder.Services.AddHealthChecks()
                 .AddUrlGroup(
                     new Uri("https://www.google.com"),
@@ -76,7 +89,12 @@ namespace Sprint1_C_
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
-                app.UseSwaggerUI();
+                app.UseSwaggerUI(ui =>
+                {
+                    ui.SwaggerEndpoint("/swagger/v1/swagger.json", "MottuFind_C_.API v1");
+                    ui.SwaggerEndpoint("/swagger/v2/swagger.json", "MottuFind_C_.API v2");
+                }
+                );
             }
 
             app.UseHttpsRedirection();
@@ -84,7 +102,9 @@ namespace Sprint1_C_
 
             app.MapControllers();
 
-            // ?? ENDPOINTS DE HEALTH CHECK ??
+            app.UseRouting();
+
+            // ENDPOINTS DE HEALTH CHECK
             app.MapHealthChecks("/health", new HealthCheckOptions()
             {
                 ResponseWriter = HealthCheckExtensions.WriteResponse,

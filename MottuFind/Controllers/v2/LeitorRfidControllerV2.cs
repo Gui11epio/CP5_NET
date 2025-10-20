@@ -8,14 +8,14 @@ using Swashbuckle.AspNetCore.Annotations;
 namespace MottuFind.Controllers
 {
     [ApiController]
-    [ApiVersion("1.0")]
+    [ApiVersion("2.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
     [SwaggerTag("Gerencia operações relacionadas aos leitores RFID.")]
-    public class LeitorRfidController : ControllerBase
+    public class LeitorRfidControllerV2 : ControllerBase
     {
         private readonly LeitorRfidService _leitorService;
 
-        public LeitorRfidController(LeitorRfidService service)
+        public LeitorRfidControllerV2(LeitorRfidService service)
         {
             _leitorService = service;
         }

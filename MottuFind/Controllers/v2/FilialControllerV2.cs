@@ -6,18 +6,17 @@ using Sprint1_C_.Application.DTOs.Response;
 using Sprint1_C_.Application.Services;
 using Swashbuckle.AspNetCore.Annotations;
 
-namespace Sprint1_C_.Controllers
+namespace MottuFind.Controllers.v2
 {
-
     [ApiController]
-    [ApiVersion("1.0")]
+    [ApiVersion("2.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
     [SwaggerTag("Gerencia operações relacionadas às filiais.")]
-    public class FilialController : ControllerBase
+    public class FilialControllerV2 : ControllerBase
     {
         private readonly FilialService _filialService;
 
-        public FilialController(FilialService service)
+        public FilialControllerV2(FilialService service)
         {
             _filialService = service;
         }
@@ -154,5 +153,6 @@ namespace Sprint1_C_.Controllers
 
             return NoContent();
         }
+
     }
 }
